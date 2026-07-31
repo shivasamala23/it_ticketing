@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Zunax IT Support - Mobile</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- AMBIENT BACKGROUND GLOW -->
+  <div class="ambient-glow bg-glow-1"></div>
+  <div class="ambient-glow bg-glow-2"></div>
+
+  <!-- APP CONTAINER -->
+  <div id="app" class="app-container">
+
+    <!-- LOGIN OVERLAY -->
+    <div id="loginModal" class="login-modal active">
+      <div class="login-card">
+        <div class="brand-header">
+          <div class="brand-logo">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <h2>IT Support App</h2>
+          <p>Login with your Odoo Employee Account</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label><i class="fa-solid fa-globe"></i> Odoo Server URL</label>
+            <input type="url" id="odooUrl" placeholder="http://localhost:8068" required>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-database"></i> Database Name</label>
+            <input type="text" id="odooDb" placeholder="zunax_test1" required>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-user"></i> Username / Email</label>
+            <input type="text" id="odooLogin" placeholder="employee@zunax.com" required>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" id="odooPassword" placeholder="••••••••" required>
+          </div>
+
+          <div class="form-group quick-fill-box">
+            <button type="button" class="btn-preset" onclick="fillStagingPreset()">
+              <i class="fa-solid fa-bolt"></i> Auto-fill Local Staging (Port 8068 / zunax_test1)
+            </button>
+          </div>
+
+          <div class="form-group demo-toggle">
+            <label class="checkbox-label">
+              <input type="checkbox" id="useDemoMode" onchange="toggleDemoNotice(this)">
+              <span>Use Offline Demo / Test Mode</span>
+            </label>
+            <span id="demoNoticeText" class="demo-subtext hidden">Test without an active Odoo server connection</span>
+          </div>
+
+          <button type="submit" id="loginBtn" class="btn btn-primary btn-block">
+            <span id="loginBtnText">Sign In to Odoo</span>
+            <i id="loginSpinner" class="fa-solid fa-circle-notch fa-spin hidden"></i>
+          </button>
+        </form>
+
+        <div id="loginError" class="alert alert-danger hidden"></div>
+      </div>
+    </div>
+
+    <!-- HEADER BAR -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="user-avatar" id="headerAvatar">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="user-meta">
+          <span class="greeting">Welcome back,</span>
+          <h3 class="user-name" id="headerUserName">Employee</h3>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button class="icon-btn" id="serverStatusBtn" onclick="showServerModal()" title="Odoo Status">
+          <span class="status-dot online" id="statusDot"></span>
+          <i class="fa-solid fa-server"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <main class="app-content">
+
+      <!-- TAB 1: TICKETS DASHBOARD -->
+      <section id="tabTickets" class="tab-page active">
+        <!-- Dashboard Stats -->
+        <div class="stats-grid">
+          <div class="stat-card" onclick="filterByStage('all')">
+            <div class="stat-icon icon-blue"><i class="fa-solid fa-ticket"></i></div>
+            <div class="stat-info">
+              <h4 id="statTotal">0</h4>
+              <p>Total</p>
+            </div>
+          </div>
+          <div class="stat-card" onclick="filterByStage('new')">
+            <div class="stat-icon icon-amber"><i class="fa-solid fa-folder-open"></i></div>
+            <div class="stat-info">
+              <h4 id="statNew">0</h4>
+              <p>New</p>
+            </div>
+          </div>
+          <div class="stat-card" onclick="filterByStage('in_progress')">
+            <div class="stat-icon icon-purple"><i class="fa-solid fa-spinner"></i></div>
+            <div class="stat-info">
+              <h4 id="statInProgress">0</h4>
+              <p>In Progress</p>
+            </div>
+          </div>
+          <div class="stat-card" onclick="filterByStage('resolved')">
+            <div class="stat-icon icon-green"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="stat-info">
+              <h4 id="statResolved">0</h4>
+              <p>Resolved</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search and Filter Bar -->
+        <div class="search-bar">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search ticket # or subject..." oninput="handleSearch()">
+          <button class="filter-btn" onclick="refreshTickets()" title="Sync Odoo">
+            <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
+          </button>
+        </div>
+
+        <!-- Stage Filter Pills -->
+        <div class="filter-pills">
+          <button class="pill active" data-stage="all" onclick="selectFilterPill(this, 'all')">All</button>
+          <button class="pill" data-stage="new" onclick="selectFilterPill(this, 'new')">New</button>
+          <button class="pill" data-stage="in_progress" onclick="selectFilterPill(this, 'in_progress')">In Progress</button>
+          <button class="pill" data-stage="resolved" onclick="selectFilterPill(this, 'resolved')">Resolved</button>
+          <button class="pill" data-stage="cancelled" onclick="selectFilterPill(this, 'cancelled')">Cancelled</button>
+        </div>
+
+        <!-- Tickets Feed List -->
+        <div id="ticketsList" class="tickets-list">
+          <div class="loading-skeleton">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: CREATE TICKET FORM -->
+      <section id="tabCreate" class="tab-page">
+        <div class="page-title-box">
+          <h2>Raise IT Ticket</h2>
+          <p>Submit your issue to Odoo IT Department</p>
+        </div>
+
+        <form id="createTicketForm" onsubmit="handleCreateTicket(event)">
+          <div class="form-group">
+            <label><i class="fa-solid fa-list-check"></i> Predefined Subject / Category</label>
+            <select id="subjectSelect" onchange="onSubjectChange(this)">
+              <option value="">-- Select Subject (Optional) --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-heading"></i> Issue Title / Subject <span class="req">*</span></label>
+            <input type="text" id="ticketSubjectInput" placeholder="e.g. Laptop WiFi disconnects frequently" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col">
+              <label><i class="fa-solid fa-building"></i> IT Department <span class="req">*</span></label>
+              <select id="deptSelect" required>
+                <option value="">-- Select Dept --</option>
+              </select>
+            </div>
+
+            <div class="form-group col">
+              <label><i class="fa-solid fa-triangle-exclamation"></i> Priority <span class="req">*</span></label>
+              <select id="prioritySelect" required>
+                <option value="0">Low</option>
+                <option value="1" selected>Medium</option>
+                <option value="2">High</option>
+                <option value="3">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-align-left"></i> Issue Description <span class="req">*</span></label>
+            <textarea id="ticketDescInput" rows="4" placeholder="Describe the issue in detail, including error messages or steps to reproduce..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col">
+              <label><i class="fa-solid fa-envelope"></i> Contact Email</label>
+              <input type="email" id="contactEmail" readonly>
+            </div>
+            <div class="form-group col">
+              <label><i class="fa-solid fa-phone"></i> Phone / Mobile</label>
+              <input type="text" id="contactPhone" placeholder="Mobile #">
+            </div>
+          </div>
+
+          <button type="submit" id="submitTicketBtn" class="btn btn-accent btn-block">
+            <i class="fa-solid fa-paper-plane"></i> Submit Ticket to Odoo
+          </button>
+        </form>
+      </section>
+
+      <!-- TAB 3: EMPLOYEE PROFILE -->
+      <section id="tabProfile" class="tab-page">
+        <div class="profile-card">
+          <div class="profile-avatar-large" id="profileAvatar">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <h2 id="profileName">Employee Name</h2>
+          <p class="profile-job" id="profileJob">Job Position</p>
+
+          <div class="profile-details">
+            <div class="detail-item">
+              <i class="fa-solid fa-building"></i>
+              <div>
+                <label>Department</label>
+                <span id="profileDept">IT / Operations</span>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <i class="fa-solid fa-envelope"></i>
+              <div>
+                <label>Work Email</label>
+                <span id="profileEmail">employee@zunax.com</span>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <i class="fa-solid fa-phone"></i>
+              <div>
+                <label>Mobile Phone</label>
+                <span id="profilePhone">+1234567890</span>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <i class="fa-solid fa-id-badge"></i>
+              <div>
+                <label>Odoo User ID</label>
+                <span id="profileUid">UID #--</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-outline-danger btn-block" onclick="handleLogout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+          </button>
+        </div>
+      </section>
+
+      <!-- TICKET DETAILS MODAL / PAGE -->
+      <div id="ticketDetailModal" class="modal-view">
+        <div class="modal-header">
+          <button class="icon-btn-back" onclick="closeTicketDetail()">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="modal-title-box">
+            <span class="ticket-code" id="detailTicketNum">IT00000</span>
+            <h3 class="modal-title" id="detailSubject">Ticket Details</h3>
+          </div>
+          <button class="icon-btn" onclick="refreshCurrentTicketDetail()">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+
+        <div class="modal-body" id="detailBody">
+          <!-- Stepper Timeline -->
+          <div class="stepper-box">
+            <div class="stepper" id="ticketStepper">
+              <div class="step" data-step="draft"><div class="circle">1</div><span>Draft</span></div>
+              <div class="step" data-step="new"><div class="circle">2</div><span>New</span></div>
+              <div class="step" data-step="in_progress"><div class="circle">3</div><span>In Progress</span></div>
+              <div class="step" data-step="resolved"><div class="circle">4</div><span>Resolved</span></div>
+            </div>
+          </div>
+
+          <!-- Ticket Info Meta -->
+          <div class="info-card">
+            <div class="info-row">
+              <span class="info-label">Priority</span>
+              <span id="detailPriority" class="badge">Medium</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">IT Department</span>
+              <span id="detailDept" class="info-val">Hardware</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Assigned To</span>
+              <span id="detailAssigned" class="info-val">Unassigned</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Created On</span>
+              <span id="detailCreated" class="info-val">2026-07-30</span>
+            </div>
+            <div class="info-row" id="rowResolvedDate">
+              <span class="info-label">Resolved On</span>
+              <span id="detailResolved" class="info-val">--</span>
+            </div>
+          </div>
+
+          <!-- Ticket Description -->
+          <div class="content-box">
+            <h4><i class="fa-solid fa-align-left"></i> Issue Description</h4>
+            <div id="detailDescription" class="rich-text-content">No description provided.</div>
+          </div>
+
+          <!-- Resolution Notes (if resolved) -->
+          <div id="resolutionBox" class="content-box box-success hidden">
+            <h4><i class="fa-solid fa-circle-check"></i> Resolution Notes</h4>
+            <div id="detailResolutionNotes" class="rich-text-content">--</div>
+          </div>
+
+          <!-- Cancellation Reason (if cancelled) -->
+          <div id="cancellationBox" class="content-box box-danger hidden">
+            <h4><i class="fa-solid fa-ban"></i> Cancellation Reason</h4>
+            <div id="detailCancellationReason" class="text-danger">--</div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons-box" id="detailActions">
+            <button class="btn btn-danger btn-block" id="btnCancelTicket" onclick="openCancelModal()">
+              <i class="fa-solid fa-circle-xmark"></i> Cancel Ticket
+            </button>
+          </div>
+
+          <!-- Chatter & Comments -->
+          <div class="chatter-section">
+            <h4><i class="fa-solid fa-comments"></i> Communication / Chatter History</h4>
+            <div id="chatterList" class="chatter-list">
+              <p class="text-muted">Loading comments...</p>
+            </div>
+
+            <div class="add-comment-box">
+              <textarea id="commentInput" rows="2" placeholder="Send a message to IT support team..."></textarea>
+              <button class="btn btn-primary" onclick="postComment()">
+                <i class="fa-solid fa-paper-plane"></i> Send
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CANCEL TICKET MODAL -->
+      <div id="cancelModal" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-card-header">
+            <h3><i class="fa-solid fa-ban"></i> Cancel IT Ticket</h3>
+            <button class="close-btn" onclick="closeCancelModal()">&times;</button>
+          </div>
+          <div class="modal-card-body">
+            <p>Please select or provide a reason for cancelling this ticket:</p>
+            <div class="form-group">
+              <label>Reason Preset</label>
+              <select id="cancelReasonPreset" onchange="onCancelPresetChange(this)">
+                <option value="">-- Choose Reason --</option>
+                <option value="Issue resolved automatically">Issue resolved automatically</option>
+                <option value="Raised by mistake">Raised by mistake</option>
+                <option value="No longer required">No longer required</option>
+                <option value="Other">Other (Write below)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Detailed Reason <span class="req">*</span></label>
+              <textarea id="cancelReasonText" rows="3" placeholder="Provide reason..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-card-footer">
+            <button class="btn btn-secondary" onclick="closeCancelModal()">Dismiss</button>
+            <button class="btn btn-danger" onclick="submitCancelTicket()">Confirm Cancellation</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERVER CONFIG MODAL -->
+      <div id="serverModal" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-card-header">
+            <h3><i class="fa-solid fa-network-wired"></i> Odoo Connection Info</h3>
+            <button class="close-btn" onclick="closeServerModal()">&times;</button>
+          </div>
+          <div class="modal-card-body">
+            <div class="info-row">
+              <span class="info-label">Server URL</span>
+              <span id="srvUrl" class="info-val text-break">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Database</span>
+              <span id="srvDb" class="info-val">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Session ID</span>
+              <span id="srvSid" class="info-val text-break">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Sync Mode</span>
+              <span id="srvMode" class="badge badge-success">Live Odoo JSON-RPC</span>
+            </div>
+          </div>
+          <div class="modal-card-footer">
+            <button class="btn btn-secondary" onclick="closeServerModal()">Close</button>
+            <button class="btn btn-primary" onclick="testConnection()">Test Re-Connect</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="tabTickets" onclick="switchTab('tabTickets')">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Tickets</span>
+      </button>
+      
+      <button class="nav-item fab-item" data-tab="tabCreate" onclick="switchTab('tabCreate')">
+        <div class="fab-circle">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+        <span>Raise</span>
+      </button>
+      
+      <button class="nav-item" data-tab="tabProfile" onclick="switchTab('tabProfile')">
+        <i class="fa-solid fa-user-gear"></i>
+        <span>Profile</span>
+      </button>
+    </nav>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="toast-container"></div>
+
+  </div>
+
+  <script src="js/odoo_api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Reg failed', err));
+    }
+  </script>
+</body>
+</html>
